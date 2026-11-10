@@ -9,7 +9,7 @@ void main() {
     await tester.pumpWidget(const MyApp());
 
     expect(find.text('MyPortfolio'), findsOneWidget);
-    expect(find.text('Burhan'), findsOneWidget);
+    expect(find.text('Awiddy Munaya Rajanadoli'), findsOneWidget);
     expect(find.text('Selamat datang di MyPortfolio Mobile!'), findsOneWidget);
     expect(find.text('Lihat Proyek'), findsOneWidget);
     expect(find.text('Tambah Proyek'), findsOneWidget);
