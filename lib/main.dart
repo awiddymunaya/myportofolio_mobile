@@ -13,10 +13,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'MyPortfolio',
+      debugShowCheckedModeBanner: false,
+      // Tema Royal Blue & Gold, sama dengan web portofolio Django.
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.indigo,
-          secondary: Colors.amber[700],
+          seedColor: const Color(0xFF1E3A8A),
+          primary: const Color(0xFF1E3A8A),
+          secondary: const Color(0xFFD4AF37),
         ),
         useMaterial3: true,
       ),
