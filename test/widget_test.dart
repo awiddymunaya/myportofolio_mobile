@@ -11,8 +11,8 @@ void main() {
     expect(find.text('MyPortfolio'), findsOneWidget);
     expect(find.text('Awiddy Munaya Rajanadoli'), findsOneWidget);
     expect(find.text('Selamat datang di MyPortfolio Mobile!'), findsOneWidget);
-    expect(find.text('Lihat Proyek'), findsOneWidget);
-    expect(find.text('Tambah Proyek'), findsOneWidget);
+    expect(find.text('Lihat Experience'), findsOneWidget);
+    expect(find.text('Tambah Experience'), findsOneWidget);
     expect(find.text('Logout'), findsOneWidget);
   });
 
@@ -21,11 +21,11 @@ void main() {
   ) async {
     await tester.pumpWidget(const MyApp());
 
-    await tester.tap(find.text('Tambah Proyek'));
+    await tester.tap(find.text('Tambah Experience'));
     await tester.pump();
 
     expect(
-      find.text('Kamu telah menekan tombol Tambah Proyek!'),
+      find.text('Kamu telah menekan tombol Tambah Experience!'),
       findsOneWidget,
     );
   });

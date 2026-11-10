@@ -7,10 +7,11 @@ class MyHomePage extends StatelessWidget {
   final String nama = "Awiddy Munaya Rajanadoli";
   final String kelas = "PBP D";
 
+  // Tiap tombol membawa warnanya sendiri, jadi ItemCard tidak perlu if-else.
   final List<ItemHomepage> items = [
-    ItemHomepage("Lihat Proyek", Icons.folder),
-    ItemHomepage("Tambah Proyek", Icons.add_circle),
-    ItemHomepage("Logout", Icons.logout),
+    ItemHomepage("Lihat Experience", Icons.work, Colors.blue.shade700),
+    ItemHomepage("Tambah Experience", Icons.add_circle, Colors.green.shade700),
+    ItemHomepage("Logout", Icons.logout, Colors.red.shade700),
   ];
 
   @override
@@ -110,11 +111,13 @@ class InfoCard extends StatelessWidget {
   }
 }
 
+/// Data satu tombol menu: nama, ikon, dan warna latar kartunya.
 class ItemHomepage {
   final String name;
   final IconData icon;
+  final Color color;
 
-  ItemHomepage(this.name, this.icon);
+  ItemHomepage(this.name, this.icon, this.color);
 }
 
 class ItemCard extends StatelessWidget {
@@ -126,8 +129,8 @@ class ItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      // Menggunakan warna sekunder dari skema tema aplikasi.
-      color: Theme.of(context).colorScheme.secondary,
+      // Warna latar diambil dari data item, jadi setiap tombol berbeda.
+      color: item.color,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         // Aksi ketika kartu ditekan oleh pengguna.
