@@ -124,9 +124,6 @@ test/
   * AI sempat menyarankan perintah `git rebase --reset-author-date` untuk memperbaiki nama committer, padahal perintah itu tidak mengubah nama. AI kemudian meralatnya sendiri, dan saya memverifikasi author serta committer lewat `git log` sebelum push.
   * Jawaban reflektif dari AI saya baca ulang dan cocokkan dengan kode di `lib/menu.dart` dan `lib/main.dart` sebelum dikumpulkan.
 * **Cuplikan Log Prompting:**
-  * "buatkan sesi tugas 7" (dengan lampiran PDF soal Individual Assignment 7)
   * "kamu perlu repo yang mana buat ceknya bilang aja"
-  * "authorized dan commitnya bukan atas nama kamu kan?"
   * "berarti udah selesai?" (dengan tangkapan layar aplikasi di Safari)
-  * "tolong buatkan READMEnya"
-  * "yang ai disclosurenya isi juga dong"
+
