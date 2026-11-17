@@ -3,7 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:myportofolio_mobile/main.dart';
 
-const buttonNames = ['Lihat Experience', 'Tambah Experience', 'Logout'];
+const buttonNames = [
+  'Lihat Experience',
+  'Tambah Experience',
+  'Tambah Proyek',
+  'Logout',
+];
 
 void main() {
   testWidgets('Halaman menu menampilkan InfoCard dengan data saya', (
@@ -43,6 +48,8 @@ void main() {
     ) async {
       await tester.pumpWidget(const MyApp());
 
+      // Baris kedua tombol bisa berada di luar layar, gulir dulu.
+      await tester.ensureVisible(find.text(name));
       await tester.tap(find.text(name));
       await tester.pump();
 
