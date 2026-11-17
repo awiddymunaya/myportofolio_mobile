@@ -11,9 +11,12 @@ Aplikasi mobile Flutter untuk portofolio pribadi saya. Aplikasi ini adalah versi
 ## 🚀 Fitur Saat Ini
 
 * **Kartu identitas (`InfoCard`):** tiga kartu berisi NPM, nama, dan kelas, dengan aksen garis emas.
-* **Menu aksi (`ItemCard`):** tombol **Lihat Experience** (biru), **Tambah Experience** (hijau), dan **Logout** (merah). Warna tiap tombol disimpan di model `ItemHomepage`.
+* **Menu aksi (`ItemCard`):** tombol **Lihat Experience** (biru), **Tambah Experience** (hijau), **Tambah Proyek** (ungu), dan **Logout** (merah). Warna tiap tombol disimpan di model `ItemHomepage`.
 * **SnackBar interaktif:** menekan tombol memunculkan pesan "Kamu telah menekan tombol [Nama Tombol]!" dengan warna yang sama seperti tombolnya.
-* **Widget test:** 5 test untuk data identitas, warna tombol yang berbeda, dan SnackBar tiap tombol.
+* **Drawer navigasi (`LeftDrawer`):** opsi **Home**, **Add Project**, dan **Add Experience**, dipakai bersama oleh halaman menu dan kedua halaman form.
+* **Form Tambah Proyek (Tutorial 09):** nama, deskripsi, kategori, teknologi, dan tautan proyek, dengan validasi dan pop-up ringkasan.
+* **Form Tambah Experience (Tugas 8):** field mengikuti model `Experience` di web Django: judul, deskripsi, kategori (Internship, Research, Volunteer, Part-Time, Full-Time, Freelance), thumbnail, logo organisasi, tanggal mulai, dan tanggal selesai lewat `showDatePicker()`, plus *switch* "Masih berlangsung". Setelah lolos validasi, semua isian tampil di `AlertDialog`.
+* **Widget test:** 15 test untuk menu, drawer, kedua form, validasi, dialog, dan navigasi kembali.
 
 ## 📅 Progres Mingguan
 
@@ -21,15 +24,24 @@ Aplikasi mobile Flutter untuk portofolio pribadi saya. Aplikasi ini adalah versi
 | --- | --- | --- |
 | 8 | Tutorial 08 | Inisialisasi proyek Flutter, memisahkan `menu.dart` dari `main.dart`, `MyHomePage` menjadi `StatelessWidget`, membuat `InfoCard` dan `ItemCard` |
 | 8 | Tugas 7 | Data identitas sendiri, tombol portofolio dengan warna berbeda, tema Royal Blue & Gold, SnackBar berwarna, widget test |
+| 9 | Tutorial 09 | Package `material_ui`, form Tambah Proyek, `LeftDrawer`, tombol Tambah Proyek, refactor ke `screens/` dan `widgets/` |
+| 9 | Tugas 8 | Form Tambah Experience sesuai model Django, kartu dan opsi drawer untuk membukanya, validasi panjang/URL/urutan tanggal, test baru |
 
 ## 🗂️ Struktur Kode
 
 ```
 lib/
-├── main.dart   # titik masuk aplikasi: main() dan MyApp (MaterialApp + tema)
-└── menu.dart   # MyHomePage, InfoCard, ItemHomepage, ItemCard
+├── main.dart                   # titik masuk aplikasi: main() dan MyApp (MaterialApp + tema)
+├── screens/
+│   ├── menu.dart               # MyHomePage, InfoCard, ItemHomepage
+│   ├── project_form.dart       # ProjectFormPage (Tutorial 09)
+│   └── experience_form.dart    # ExperienceFormPage (Tugas 8)
+└── widgets/
+    ├── left_drawer.dart        # LeftDrawer: Home, Add Project, Add Experience
+    └── project_card.dart       # ItemCard: kartu aksi + navigasi ke form
 test/
-└── widget_test.dart
+├── widget_test.dart            # menu, drawer, form proyek
+└── experience_form_test.dart   # form experience
 ```
 
 ## 🛠️ Instruksi Setup Lokal
@@ -54,6 +66,40 @@ test/
    flutter run -d chrome
    ```
    Tanpa Chrome (misalnya memakai Safari), jalankan `flutter run -d web-server --web-port 8080` lalu buka `http://localhost:8080`.
+
+---
+
+## Tugas 8
+
+1. **Perbedaan `Navigator.push()`, `Navigator.pushReplacement()`, dan `Navigator.pop()`, serta mana yang dipakai di aplikasi ini.**
+   `Navigator` menyimpan halaman (*route*) sebagai tumpukan (*stack*). `push()` menaruh route baru di atas stack, jadi halaman lama masih ada di bawahnya. `pushReplacement()` mengganti route paling atas dengan route baru, jadi halaman lama dibuang dari stack. `pop()` membuang route paling atas sehingga pengguna kembali ke halaman di bawahnya.
+   Kartu **Tambah Experience** di menu membuka `ExperienceFormPage` dengan `Navigator.push()`. Karena menu masih ada di bawah stack, tombol kembali bawaan perangkat menjalankan `pop()` dan membawa pengguna ke menu lagi. Opsi drawer memakai `Navigator.pushReplacement()`. Saat pengguna menekan **Home** di drawer pada halaman form, route form diganti dengan `MyHomePage` yang baru, sehingga pengguna kembali ke halaman utama tanpa menumpuk halaman form di stack.
+
+2. **Bagaimana `Scaffold`, `AppBar`, dan `Drawer` menjaga struktur halaman tetap konsisten? Contoh warna tema di lebih dari satu halaman.**
+   `Scaffold` adalah kerangka yang sama untuk setiap halaman: slot `appBar` di atas, `drawer` di samping, dan `body` di tengah. Karena menu, form proyek, dan form experience semuanya memakai `Scaffold` dengan `AppBar` dan `LeftDrawer` yang sama, pengguna selalu menemukan judul halaman dan menu navigasi di posisi yang sama. `LeftDrawer` ditulis sekali di `lib/widgets/left_drawer.dart` lalu dipakai di ketiga halaman, jadi menambah opsi **Add Experience** cukup di satu tempat.
+   Contoh warna tema: warna primer Royal Blue (`#1E3A8A`) diatur sekali di `MaterialApp` (`lib/main.dart`), lalu diambil lewat `Theme.of(context).colorScheme.primary` untuk latar `AppBar` di menu dan form experience, latar `DrawerHeader`, dan tombol **Save** di kedua form.
+
+3. **Mengapa tata letak ini dipilih untuk formulir, dan apa peran widget pengatur jarak dan penggulir?**
+   Form experience disusun dalam satu `Column` vertikal, satu field per baris, karena di layar ponsel yang sempit field yang ditumpuk ke bawah lebih mudah dibaca dan diisi daripada disusun menyamping. Urutannya mengikuti model `Experience`: judul, deskripsi, kategori, gambar, lalu tanggal, dan tombol **Save** di paling bawah.
+   Setiap field dibungkus `Padding` (`EdgeInsets.all(8.0)`) supaya ada jarak yang sama antarfield dan dari tepi layar, sehingga label dan pesan kesalahan tidak saling menempel. Seluruh `Column` dibungkus `SingleChildScrollView`. Form ini cukup panjang (tujuh input, *switch*, dan tombol), dan ketika papan ketik muncul, ruang layar makin kecil. Tanpa penggulir, isi yang tidak muat akan *overflow* dan tombol **Save** tidak bisa dijangkau. Dengan `SingleChildScrollView`, pengguna tinggal menggulir untuk mencapai field mana pun.
+
+4. **Peran `GlobalKey<FormState>`, `validator`, dan `validate()`, dan contoh nilai yang ditolak.**
+   `GlobalKey<FormState>` (`_formKey`) dipasang di widget `Form` sehingga kita bisa mengakses state form dari luar, misalnya dari tombol **Save**. Setiap `TextFormField` punya fungsi `validator` yang mengembalikan pesan kesalahan jika nilainya tidak valid, atau `null` jika valid. Saat **Save** ditekan, `_formKey.currentState!.validate()` menjalankan semua validator sekaligus, menampilkan pesan kesalahan di bawah field yang bermasalah, dan mengembalikan `true` hanya jika semuanya lolos. Hanya pada kondisi itu `showDialog()` dipanggil untuk menampilkan ringkasan.
+   Contoh nilai yang ditolak: thumbnail diisi `bukan url`. Field ini memakai `keyboardType: TextInputType.url`, tetapi papan ketik URL hanya memudahkan mengetik karakter seperti `/` dan `.`, bukan membatasi isinya. Pengguna tetap bisa mengetik teks apa saja atau menempelkan teks. Karena itu validator memeriksa bahwa isinya berupa URL `http(s)` atau path seperti `/static/img/Compfest.jpg`, sesuai cara web Django saya menyimpan gambar. Contoh lain: judul yang hanya berisi spasi ditolak karena di-`trim()` dulu, dan tanggal selesai yang lebih awal dari tanggal mulai ditolak walaupun keduanya dipilih lewat `showDatePicker()` yang sah.
+
+### AI Disclosure (Tugas 8)
+
+* **Tools yang Digunakan:** Claude (Anthropic), lewat fitur proyek di claude.ai. Seperti di Tugas 7, Claude bekerja di *sandbox* terpisah tanpa akses push, jadi hasilnya dikirim sebagai file *patch* dan panduan. Saya sendiri yang menjalankan `git am`, `flutter analyze`, `flutter test`, dan `git push`.
+* **Bagian yang Dibantu:**
+  * Membuat `lib/screens/experience_form.dart` dengan field yang dicocokkan ke model `Experience` di `main/models.py` repositori Django saya, termasuk validasi kosong/spasi, panjang maksimal 255 dan 500 karakter, format URL/path, dan urutan tanggal.
+  * Menyambungkan kartu **Tambah Experience** (yang sudah ada sejak Tugas 7) ke form dengan `Navigator.push()`, dan menambah opsi **Add Experience** di `LeftDrawer`.
+  * Menulis `test/experience_form_test.dart` (5 test) dan memecah perubahan menjadi beberapa commit dengan format *conventional commits*.
+  * Menyusun draf README ini, termasuk jawaban pertanyaan reflektif Tugas 8.
+* **Strategi Prompting:** Saya meminta AI mengerjakan Tugas 8 di atas hasil Tutorial 09 yang sudah saya push, lalu mengunggah PDF soal Individual Assignment 8 supaya pekerjaannya mengikuti checklist dan rubrik. Sebelum PDF diunggah, AI memilih bagian Experience karena tombol **Tambah Experience** sudah disiapkan sejak Tugas 7.
+* **Keterbatasan AI & Perbaikan Manual:**
+  * AI menguji di Flutter versi Linux dan build web di *sandbox*, bukan di laptop saya. Saya menjalankan ulang `flutter analyze` dan `flutter test`, lalu mengetes form di browser saya sendiri (termasuk layar selebar ponsel).
+  * Isian contoh di test (misalnya "Staff IT Compfest") hanya data uji, bukan data experience saya yang sebenarnya.
+  * [Tuliskan di sini perbaikan atau pengecekan manual yang kamu lakukan sendiri.]
 
 ---
 
