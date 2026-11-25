@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/models/experience.dart';
 import 'package:myportofolio_mobile/services/api_client.dart';
+import 'package:myportofolio_mobile/widgets/network_image_box.dart';
 import 'package:provider/provider.dart';
 
 /// Detail satu Experience yang dipilih dari daftar.
@@ -29,7 +30,7 @@ class ExperienceDetailScreen extends StatelessWidget {
             if (experience.thumbnail.isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: _NetworkImage(
+                child: NetworkImageBox(
                   key: const Key('experience-thumbnail'),
                   url: apiClient.resolveImageUrl(experience.thumbnail),
                   height: 200,
@@ -39,7 +40,7 @@ class ExperienceDetailScreen extends StatelessWidget {
             Row(
               children: [
                 if (experience.logoUrl.isNotEmpty) ...[
-                  _NetworkImage(
+                  NetworkImageBox(
                     key: const Key('experience-logo'),
                     url: apiClient.resolveImageUrl(experience.logoUrl),
                     height: 48,
@@ -85,38 +86,6 @@ class ExperienceDetailScreen extends StatelessWidget {
             Text(experience.description),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Image.network dengan tampilan cadangan kalau gambar gagal dimuat.
-class _NetworkImage extends StatelessWidget {
-  const _NetworkImage({
-    required this.url,
-    required this.height,
-    this.width,
-    super.key,
-  });
-
-  final String url;
-  final double height;
-  final double? width;
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.network(
-      url,
-      height: height,
-      width: width ?? double.infinity,
-      fit: BoxFit.cover,
-      // Di web, pakai elemen <img> biasa jika gambar diblokir CORS.
-      webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-      errorBuilder: (context, error, stackTrace) => Container(
-        height: height,
-        width: width ?? double.infinity,
-        color: Colors.grey.shade300,
-        child: const Icon(Icons.broken_image, color: Colors.grey),
       ),
     );
   }

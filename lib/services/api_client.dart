@@ -11,6 +11,26 @@ class ApiException implements Exception {
   final int statusCode;
   final String message;
 
+  /// Pesan error validasi dari body 400 DRF yang enak dibaca, misalnya
+  /// `{"title": ["Tidak boleh kosong."]}` menjadi `title: Tidak boleh kosong.`
+  String get validationMessage {
+    try {
+      final decoded = jsonDecode(message);
+      if (decoded is Map<String, dynamic> && decoded.isNotEmpty) {
+        return decoded.entries
+            .map((entry) {
+              final value = entry.value;
+              final text = value is List ? value.join(' ') : '$value';
+              return '${entry.key}: $text';
+            })
+            .join('\n');
+      }
+    } on FormatException {
+      // Body bukan JSON, pakai pesan umum di bawah.
+    }
+    return 'Data tidak valid.';
+  }
+
   @override
   String toString() => 'ApiException($statusCode): $message';
 }

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:http/http.dart' as http;
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/models/experience.dart';
@@ -143,26 +141,6 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
       );
   }
 
-  /// Mengambil pesan error validasi dari body 400 DRF,
-  /// misalnya {"title": ["Nama posisi tidak boleh kosong."]}.
-  String _validationMessage(String body) {
-    try {
-      final decoded = jsonDecode(body);
-      if (decoded is Map<String, dynamic>) {
-        return decoded.entries
-            .map((entry) {
-              final value = entry.value;
-              final text = value is List ? value.join(' ') : '$value';
-              return '${entry.key}: $text';
-            })
-            .join('\n');
-      }
-    } on FormatException {
-      // Body bukan JSON, pakai pesan umum di bawah.
-    }
-    return 'Data tidak valid.';
-  }
-
   /// Validasi form, pastikan sudah login, lalu kirim POST ke Django.
   Future<void> _submit({bool isRetry = false}) async {
     // validate() menjalankan semua validator di dalam Form.
@@ -215,7 +193,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
           'Akunmu tidak boleh menambah Experience (hanya Pemilik/superuser).',
         );
       } else if (error.statusCode == 400) {
-        _showSnackBar(_validationMessage(error.message));
+        _showSnackBar(error.validationMessage);
       } else {
         _showSnackBar('Gagal menyimpan Experience (${error.statusCode}).');
       }
