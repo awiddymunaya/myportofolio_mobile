@@ -11,6 +11,8 @@ include: package:flutter_lints/flutter.yaml
 
 analyzer:
   exclude:
+    # Berkas hasil build_runner (json_serializable), bukan kode tulisan sendiri
+    - "**/*.g.dart"
     - build/**
     - android/**
     - ios/**
