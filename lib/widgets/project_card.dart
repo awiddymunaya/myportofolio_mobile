@@ -1,13 +1,61 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:myportofolio_mobile/screens/menu.dart';
 import 'package:myportofolio_mobile/screens/experience_form.dart';
-import 'package:myportofolio_mobile/screens/project_form.dart';
+import 'package:myportofolio_mobile/screens/experience_list_screen.dart';
+import 'package:myportofolio_mobile/screens/menu.dart';
+import 'package:myportofolio_mobile/services/auth_state.dart';
+import 'package:myportofolio_mobile/widgets/auth_guard.dart';
+import 'package:provider/provider.dart';
 
 class ItemCard extends StatelessWidget {
   // Kartu tombol aksi yang menampilkan ikon dan nama item.
   final ItemHomepage item;
 
   const ItemCard(this.item, {super.key});
+
+  /// Menampilkan SnackBar yang warnanya sama dengan tombol yang ditekan.
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: item.color,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
+
+  Future<void> _onTap(BuildContext context) async {
+    switch (item.name) {
+      case "Lihat Experience":
+        _showSnackBar(context, "Kamu telah menekan tombol ${item.name}!");
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ExperienceListScreen()),
+        );
+      case "Tambah Experience":
+        _showSnackBar(context, "Kamu telah menekan tombol ${item.name}!");
+        // Belum login: buka halaman login dulu. Form dibuka hanya jika berhasil.
+        final loggedIn = await ensureLoggedIn(context);
+        if (!loggedIn || !context.mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ExperienceFormPage()),
+        );
+      case "Logout":
+        final auth = context.read<AuthState>();
+        if (!auth.isLoggedIn) {
+          _showSnackBar(context, "Kamu belum login.");
+          return;
+        }
+        await auth.logout();
+        if (!context.mounted) return;
+        _showSnackBar(context, "Kamu sudah logout.");
+      default:
+        _showSnackBar(context, "Kamu telah menekan tombol ${item.name}!");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,35 +65,7 @@ class ItemCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         // Aksi ketika kartu ditekan oleh pengguna.
-        onTap: () {
-          // Menampilkan SnackBar dengan pesan interaktif.
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text("Kamu telah menekan tombol ${item.name}!"),
-                // SnackBar ikut berwarna sama dengan tombol yang ditekan.
-                backgroundColor: item.color,
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 2),
-              ),
-            );
-
-          // Navigasi ke halaman yang sesuai.
-          if (item.name == "Tambah Proyek") {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ProjectFormPage()),
-            );
-          } else if (item.name == "Tambah Experience") {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ExperienceFormPage(),
-              ),
-            );
-          }
-        },
+        onTap: () => _onTap(context),
         child: Container(
           padding: const EdgeInsets.all(8),
           child: Center(

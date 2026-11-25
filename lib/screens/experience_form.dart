@@ -1,8 +1,17 @@
-import 'package:material_ui/material_ui.dart';
-import 'package:myportofolio_mobile/widgets/left_drawer.dart';
+import 'dart:convert';
 
-/// Form untuk menambah Experience. Field-nya mengikuti model Experience
-/// di proyek Django myportofolio (main/models.py).
+import 'package:http/http.dart' as http;
+import 'package:material_ui/material_ui.dart';
+import 'package:myportofolio_mobile/models/experience.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
+import 'package:myportofolio_mobile/services/auth_state.dart';
+import 'package:myportofolio_mobile/widgets/auth_guard.dart';
+import 'package:myportofolio_mobile/widgets/left_drawer.dart';
+import 'package:provider/provider.dart';
+
+/// Form untuk menambah Experience. Field-nya mengikuti ExperienceSerializer
+/// di proyek Django myportofolio, dan data dikirim lewat
+/// POST /api/v1/experiences/ dengan token login.
 class ExperienceFormPage extends StatefulWidget {
   const ExperienceFormPage({super.key});
 
@@ -41,6 +50,9 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
 
   // Dinaikkan setiap form dikosongkan, supaya semua field dibuat ulang.
   int _formVersion = 0;
+
+  // true selama request POST berjalan, supaya tombol Save tidak ditekan dua kali.
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -123,7 +135,106 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
     );
   }
 
-  void _showSummary() {
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red.shade700),
+      );
+  }
+
+  /// Mengambil pesan error validasi dari body 400 DRF,
+  /// misalnya {"title": ["Nama posisi tidak boleh kosong."]}.
+  String _validationMessage(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded.entries
+            .map((entry) {
+              final value = entry.value;
+              final text = value is List ? value.join(' ') : '$value';
+              return '${entry.key}: $text';
+            })
+            .join('\n');
+      }
+    } on FormatException {
+      // Body bukan JSON, pakai pesan umum di bawah.
+    }
+    return 'Data tidak valid.';
+  }
+
+  /// Validasi form, pastikan sudah login, lalu kirim POST ke Django.
+  Future<void> _submit({bool isRetry = false}) async {
+    // validate() menjalankan semua validator di dalam Form.
+    if (!_formKey.currentState!.validate()) return;
+
+    final loggedIn = await ensureLoggedIn(context);
+    if (!loggedIn || !mounted) return;
+
+    final auth = context.read<AuthState>();
+    final apiClient = context.read<ApiClient>();
+    final token = auth.token!;
+
+    final newExperience = Experience(
+      title: _title.trim(),
+      description: _description.trim(),
+      category: _category,
+      thumbnail: _thumbnail,
+      logoUrl: _logoUrl,
+      startedAt: _formatDate(_startedAt),
+      // null = masih berlangsung
+      endedAt: _isOngoing ? null : _formatDate(_endedAt),
+    );
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final created = await apiClient.createExperience(
+        newExperience,
+        token: token,
+      );
+      if (!mounted) return;
+      _showSummary(created);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      if (error.statusCode == 401 && !isRetry) {
+        // Token sudah tidak berlaku: logout, minta login ulang, lalu coba lagi.
+        await auth.logout();
+        if (!mounted) return;
+        _showSnackBar('Sesi login berakhir, silakan login ulang.');
+        setState(() {
+          _isSubmitting = false;
+        });
+        await _submit(isRetry: true);
+        return;
+      }
+      if (error.statusCode == 403) {
+        _showSnackBar(
+          'Akunmu tidak boleh menambah Experience (hanya Pemilik/superuser).',
+        );
+      } else if (error.statusCode == 400) {
+        _showSnackBar(_validationMessage(error.message));
+      } else {
+        _showSnackBar('Gagal menyimpan Experience (${error.statusCode}).');
+      }
+    } on http.ClientException {
+      if (!mounted) return;
+      _showSnackBar(
+        'Tidak bisa terhubung ke server. Apakah Django sudah jalan?',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  /// Pop-up konfirmasi berisi data yang dikembalikan Django (201 Created).
+  void _showSummary(Experience created) {
     showDialog(
       context: context,
       builder: (context) {
@@ -133,15 +244,16 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Judul: $_title'),
-                Text('Deskripsi: $_description'),
-                Text('Kategori: ${categories[_category]}'),
-                Text('Thumbnail: ${_thumbnail.isEmpty ? "-" : _thumbnail}'),
-                Text('Logo: ${_logoUrl.isEmpty ? "-" : _logoUrl}'),
-                Text('Mulai: ${_formatDate(_startedAt)}'),
+                Text('Judul: ${created.title}'),
+                Text('Deskripsi: ${created.description}'),
+                Text('Kategori: ${created.categoryLabel}'),
                 Text(
-                  'Selesai: ${_isOngoing ? "Masih berlangsung" : _formatDate(_endedAt)}',
+                  'Thumbnail: ${created.thumbnail.isEmpty ? "-" : created.thumbnail}',
                 ),
+                Text(
+                  'Logo: ${created.logoUrl.isEmpty ? "-" : created.logoUrl}',
+                ),
+                Text('Periode: ${created.period}'),
               ],
             ),
           ),
@@ -365,16 +477,20 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
                     style: ButtonStyle(
                       backgroundColor: WidgetStateProperty.all(primary),
                     ),
-                    onPressed: () {
-                      // validate() menjalankan semua validator di dalam Form.
-                      if (_formKey.currentState!.validate()) {
-                        _showSummary();
-                      }
-                    },
-                    child: const Text(
-                      "Save",
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    onPressed: _isSubmitting ? null : () => _submit(),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            "Save",
+                            style: TextStyle(color: Colors.white),
+                          ),
                   ),
                 ),
               ),
