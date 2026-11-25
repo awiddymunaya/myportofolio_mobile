@@ -1,28 +1,34 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:myportofolio_mobile/main.dart';
-
-/// Font bawaan flutter test (Ahem) jauh lebih lebar dari font asli,
-/// sehingga teks DrawerHeader dianggap overflow. Abaikan khusus error itu.
-void ignoreOverflowErrors() {
-  final originalOnError = FlutterError.onError;
-  FlutterError.onError = (details) {
-    if (!details.exceptionAsString().contains('overflowed')) {
-      originalOnError?.call(details);
-    }
-  };
-  addTearDown(() => FlutterError.onError = originalOnError);
-}
+import 'fake_backend.dart';
 
 /// Membuka form Experience lewat kartu Tambah Experience di menu.
-Future<void> openExperienceForm(WidgetTester tester) async {
-  await tester.pumpWidget(const MyApp());
+/// Karena belum login, halaman Login muncul dulu.
+Future<void> openExperienceForm(
+  WidgetTester tester, {
+  FakeBackend? backend,
+  String username = 'owner',
+}) async {
+  await pumpApp(tester, backend ?? FakeBackend());
   await tester.ensureVisible(find.text('Tambah Experience'));
   await tester.tap(find.text('Tambah Experience'));
   await tester.pumpAndSettle();
+  await submitLogin(tester, username: username);
   // Tunggu SnackBar dari menu hilang supaya tidak menutupi tombol Save.
-  await tester.pump(const Duration(seconds: 3));
+  await waitSnackBar(tester);
+}
+
+/// Mengisi semua kolom wajib dengan data yang valid.
+Future<void> fillValidForm(WidgetTester tester) async {
+  await tester.enterText(field('Judul Experience'), 'Staff IT Compfest');
+  await tester.enterText(
+    field('Deskripsi'),
+    'Mengembangkan website acara Compfest',
+  );
+  await pickDay(tester, 'Tanggal Mulai', '1');
+  await tester.ensureVisible(find.text('Masih berlangsung'));
+  await tester.tap(find.text('Masih berlangsung'));
   await tester.pumpAndSettle();
 }
 
@@ -64,16 +70,17 @@ void main() {
     WidgetTester tester,
   ) async {
     ignoreOverflowErrors();
-    await tester.pumpWidget(const MyApp());
+    await pumpApp(tester, FakeBackend());
 
     await tester.tap(find.byTooltip('Open navigation menu'));
     await tester.pumpAndSettle();
     expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Add Project'), findsOneWidget);
     expect(find.text('Add Experience'), findsOneWidget);
 
+    // Belum login: Add Experience membuka Login dulu, lalu form.
     await tester.tap(find.text('Add Experience'));
     await tester.pumpAndSettle();
+    await submitLogin(tester);
     expect(find.text('Add Experience Form'), findsOneWidget);
 
     // Halaman form memakai drawer yang sama.
@@ -131,10 +138,11 @@ void main() {
     },
   );
 
-  testWidgets('Form valid menampilkan semua isian lalu OK mengosongkan form', (
+  testWidgets('Form valid dikirim ke API lalu OK mengosongkan form', (
     WidgetTester tester,
   ) async {
-    await openExperienceForm(tester);
+    final backend = FakeBackend();
+    await openExperienceForm(tester, backend: backend);
 
     await tester.enterText(field('Judul Experience'), 'Staff IT Compfest');
     await tester.enterText(
@@ -168,6 +176,19 @@ void main() {
     final now = DateTime.now();
     final start = '${now.year}-${now.month.toString().padLeft(2, '0')}-01';
 
+    // Data benar-benar dikirim dengan token, sesuai skema serializer Django.
+    expect(backend.createAuthHeaders, ['Token ${FakeBackend.ownerToken}']);
+    expect(backend.createdBodies.single, {
+      'title': 'Staff IT Compfest',
+      'description': 'Mengembangkan website acara Compfest',
+      'category': 'volunteer',
+      'thumbnail': '/static/img/Compfest.jpg',
+      'logo_url': 'https://compfest.id/logo.png',
+      'started_at': start,
+      'ended_at': null,
+    });
+
+    // Pop-up menampilkan data balasan Django (201 Created).
     expect(find.text('Experience berhasil ditambahkan!'), findsOneWidget);
     expect(find.text('Judul: Staff IT Compfest'), findsOneWidget);
     expect(
@@ -177,8 +198,7 @@ void main() {
     expect(find.text('Kategori: Volunteer'), findsOneWidget);
     expect(find.text('Thumbnail: /static/img/Compfest.jpg'), findsOneWidget);
     expect(find.text('Logo: https://compfest.id/logo.png'), findsOneWidget);
-    expect(find.text('Mulai: $start'), findsOneWidget);
-    expect(find.text('Selesai: Masih berlangsung'), findsOneWidget);
+    expect(find.text('Periode: $start - Sekarang'), findsOneWidget);
 
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
@@ -187,5 +207,56 @@ void main() {
     // Form kembali kosong dan siap diisi lagi.
     expect(find.text('Staff IT Compfest'), findsNothing);
     expect(find.text('Full-Time'), findsOneWidget);
+  });
+  testWidgets('Form tidak dikirim jika validasi gagal', (
+    WidgetTester tester,
+  ) async {
+    final backend = FakeBackend();
+    await openExperienceForm(tester, backend: backend);
+
+    await tapSave(tester);
+    expect(backend.createdBodies, isEmpty);
+    expect(backend.createAuthHeaders, isEmpty);
+  });
+
+  testWidgets('Token kedaluwarsa (401): logout lalu diminta login ulang', (
+    WidgetTester tester,
+  ) async {
+    final backend = FakeBackend();
+    await openExperienceForm(tester, backend: backend);
+    await fillValidForm(tester);
+
+    backend.tokenExpired = true;
+    await tapSave(tester);
+
+    // Token lama ditolak, aplikasi logout dan membuka halaman Login.
+    expect(find.text('Sesi login berakhir, silakan login ulang.'), findsOne);
+    expect(find.widgetWithText(ElevatedButton, 'Login'), findsOneWidget);
+    expect(backend.logoutCalls, 1);
+
+    // Setelah login ulang, form otomatis dikirim lagi.
+    backend.tokenExpired = false;
+    await submitLogin(tester);
+    expect(backend.createAuthHeaders.length, 2);
+    expect(find.text('Experience berhasil ditambahkan!'), findsOneWidget);
+  });
+
+  testWidgets('Akun bukan Pemilik (403) mendapat SnackBar', (
+    WidgetTester tester,
+  ) async {
+    final backend = FakeBackend();
+    await openExperienceForm(tester, backend: backend, username: 'visitor');
+    await fillValidForm(tester);
+
+    await tapSave(tester);
+
+    expect(
+      find.text(
+        'Akunmu tidak boleh menambah Experience (hanya Pemilik/superuser).',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(backend.createdBodies, isEmpty);
   });
 }
