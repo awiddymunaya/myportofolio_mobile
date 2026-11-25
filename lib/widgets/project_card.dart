@@ -1,4 +1,6 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:myportofolio_mobile/screens/education_form.dart';
+import 'package:myportofolio_mobile/screens/education_list_screen.dart';
 import 'package:myportofolio_mobile/screens/experience_form.dart';
 import 'package:myportofolio_mobile/screens/experience_list_screen.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
@@ -42,6 +44,21 @@ class ItemCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const ExperienceFormPage()),
+        );
+      case "Lihat Education":
+        _showSnackBar(context, "Kamu telah menekan tombol ${item.name}!");
+        // Daftar Education publik, tidak perlu login.
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const EducationListScreen()),
+        );
+      case "Tambah Education":
+        _showSnackBar(context, "Kamu telah menekan tombol ${item.name}!");
+        final loggedIn = await ensureLoggedIn(context);
+        if (!loggedIn || !context.mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const EducationFormPage()),
         );
       case "Logout":
         final auth = context.read<AuthState>();

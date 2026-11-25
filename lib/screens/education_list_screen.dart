@@ -1,7 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/models/education.dart';
 import 'package:myportofolio_mobile/screens/education_detail_screen.dart';
+import 'package:myportofolio_mobile/screens/education_form.dart';
 import 'package:myportofolio_mobile/services/api_client.dart';
+import 'package:myportofolio_mobile/widgets/auth_guard.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
 import 'package:provider/provider.dart';
 
@@ -48,6 +50,20 @@ class _EducationListScreenState extends State<EducationListScreen> {
     if (changed == true && mounted) await _reload();
   }
 
+  /// Tombol +: login dulu jika perlu, lalu buka form. Jika ada entri baru,
+  /// daftar langsung dimuat ulang.
+  Future<void> _openForm() async {
+    final loggedIn = await ensureLoggedIn(context);
+    if (!loggedIn || !mounted) return;
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EducationFormPage(openedFromList: true),
+      ),
+    );
+    if (created == true && mounted) await _reload();
+  }
+
   Widget _scrollableMessage(Widget child) {
     // Tetap bisa ditarik untuk refresh walaupun isinya hanya pesan.
     return RefreshIndicator(
@@ -75,6 +91,12 @@ class _EducationListScreenState extends State<EducationListScreen> {
         foregroundColor: Colors.white,
       ),
       drawer: const LeftDrawer(),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Tambah Education',
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        onPressed: _openForm,
+        child: const Icon(Icons.add),
+      ),
       body: FutureBuilder<List<Education>>(
         future: _educationsFuture,
         builder: (context, snapshot) {
