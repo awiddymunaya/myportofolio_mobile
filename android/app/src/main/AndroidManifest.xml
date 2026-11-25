@@ -1,5 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Tutorial 10: izin akses internet untuk memanggil API Django -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- usesCleartextTraffic mengizinkan HTTP biasa ke http://10.0.2.2:8000
+         saat pengembangan lokal. Matikan untuk rilis yang hanya memakai HTTPS. -->
     <application
+        android:usesCleartextTraffic="true"
         android:label="myportofolio_mobile"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
