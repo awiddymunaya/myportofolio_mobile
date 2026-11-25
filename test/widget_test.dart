@@ -3,7 +3,13 @@ import 'package:material_ui/material_ui.dart';
 
 import 'fake_backend.dart';
 
-const buttonNames = ['Lihat Experience', 'Tambah Experience', 'Logout'];
+const buttonNames = [
+  'Lihat Experience',
+  'Tambah Experience',
+  'Lihat Education',
+  'Tambah Education',
+  'Logout',
+];
 
 /// Menggulir sampai tombol terlihat, lalu menekannya.
 Future<void> tapButton(WidgetTester tester, String name) async {

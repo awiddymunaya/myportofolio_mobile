@@ -10,13 +10,17 @@ import 'package:myportofolio_mobile/services/api_client.dart';
 /// Tiruan sederhana backend Django untuk test, memakai MockClient
 /// dari package:http/testing.dart (tidak ada request jaringan sungguhan).
 class FakeBackend {
-  FakeBackend({List<Map<String, dynamic>>? experiences})
-    : experiences = experiences ?? [sampleExperience()];
+  FakeBackend({
+    List<Map<String, dynamic>>? experiences,
+    List<Map<String, dynamic>>? educations,
+  }) : experiences = experiences ?? [sampleExperience()],
+       educations = educations ?? [sampleEducation()];
 
   static const ownerToken = 'owner-token';
   static const visitorToken = 'visitor-token';
 
   final List<Map<String, dynamic>> experiences;
+  final List<Map<String, dynamic>> educations;
 
   /// Status paksa untuk GET daftar (misalnya 500 untuk menguji error).
   int? listStatus;
@@ -28,6 +32,14 @@ class FakeBackend {
   int logoutCalls = 0;
   final List<Map<String, dynamic>> createdBodies = [];
   final List<String?> createAuthHeaders = [];
+
+  int educationListCalls = 0;
+  final List<Map<String, dynamic>> createdEducationBodies = [];
+  final List<String?> educationAuthHeaders = [];
+  final List<String> deletedEducationIds = [];
+
+  /// Status paksa untuk POST Education (misalnya 400 untuk menguji validasi).
+  int? createEducationStatus;
 
   static const _labels = {
     'internship': 'Internship',
@@ -55,6 +67,22 @@ class FakeBackend {
     'star_count': 3,
     'is_starred': false,
     'starred_by_names': 'a, b, c',
+  };
+
+  static Map<String, dynamic> sampleEducation({
+    String id = 'e0000000-0000-4000-8000-000000000001',
+    String institution = 'Universitas Indonesia',
+    String? logoUrl = '/static/img/logo-ui.png',
+  }) => {
+    'id': id,
+    'level': 'S1',
+    'institution_name': institution,
+    'start_year': 2025,
+    'end_year': 'Sekarang',
+    'description': 'Ilmu Komputer, Fasilkom UI',
+    'logo_url': logoUrl,
+    'star_count': 2,
+    'is_starred': false,
   };
 
   late final MockClient client = MockClient(_handle);
@@ -118,6 +146,49 @@ class FakeBackend {
       };
       experiences.add(created);
       return _json(created, 201);
+    }
+
+    if (path == '/api/v1/education/' && request.method == 'GET') {
+      educationListCalls++;
+      if (listStatus != null) return http.Response('Server Error', listStatus!);
+      return _json(educations, 200);
+    }
+
+    if (path == '/api/v1/education/' && request.method == 'POST') {
+      educationAuthHeaders.add(auth);
+      if (!validToken) return _json({'detail': 'Invalid token.'}, 401);
+      if (auth == 'Token $visitorToken') {
+        return _json({'detail': 'Akses ditolak.'}, 403);
+      }
+      if (createEducationStatus == 400) {
+        return _json({
+          'end_year': ['Tahun lulus tidak boleh sebelum tahun masuk.'],
+        }, 400);
+      }
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      createdEducationBodies.add(body);
+      final created = {
+        ...body,
+        'id': 'e0000000-0000-4000-8000-00000000000${educations.length + 1}',
+        'star_count': 0,
+        'is_starred': false,
+      };
+      educations.add(created);
+      return _json(created, 201);
+    }
+
+    final educationDetail = RegExp(r'^/api/v1/education/([^/]+)/$')
+        .firstMatch(path);
+    if (educationDetail != null && request.method == 'DELETE') {
+      educationAuthHeaders.add(auth);
+      if (!validToken) return _json({'detail': 'Invalid token.'}, 401);
+      if (auth == 'Token $visitorToken') {
+        return _json({'detail': 'Akses ditolak.'}, 403);
+      }
+      final id = educationDetail.group(1)!;
+      deletedEducationIds.add(id);
+      educations.removeWhere((item) => item['id'] == id);
+      return http.Response('', 204);
     }
 
     return http.Response('Not Found', 404);
