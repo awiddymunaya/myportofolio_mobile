@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:myportofolio_mobile/config.dart';
+import 'package:myportofolio_mobile/models/education.dart';
 import 'package:myportofolio_mobile/models/experience.dart';
 
 /// Dilempar ketika API membalas dengan status di luar 2xx.
@@ -93,6 +94,48 @@ class ApiClient {
     return Experience.fromJson(decoded);
   }
 
+  /// GET /api/v1/education/ (publik, tanpa login).
+  /// Django sudah mengurutkan dari tahun masuk terbaru.
+  Future<List<Education>> getEducations() async {
+    final response = await _client.get(
+      _uri('/api/v1/education/'),
+      headers: const {'Accept': 'application/json'},
+    );
+    _ensureSuccess(response);
+    final decoded =
+        jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+    return decoded
+        .map((item) => Education.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// POST /api/v1/education/ dengan header `Authorization: Token <key>`.
+  /// Hanya superuser (Pemilik) yang diizinkan Django.
+  Future<Education> createEducation(
+    Education education, {
+    required String token,
+  }) async {
+    final response = await _client.post(
+      _uri('/api/v1/education/'),
+      headers: _authHeaders(token),
+      body: jsonEncode(education.toJson()),
+    );
+    _ensureSuccess(response);
+    final decoded =
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    return Education.fromJson(decoded);
+  }
+
+  /// DELETE `/api/v1/education/<id>/` dengan token (204 No Content).
+  /// Hanya superuser (Pemilik) yang diizinkan Django.
+  Future<void> deleteEducation(String id, {required String token}) async {
+    final response = await _client.delete(
+      _uri('/api/v1/education/$id/'),
+      headers: _authHeaders(token),
+    );
+    _ensureSuccess(response);
+  }
+
   /// POST /api/v1/auth/token/: menukar username + password menjadi token.
   Future<String> obtainToken(String username, String password) async {
     final response = await _client.post(
@@ -117,6 +160,12 @@ class ApiClient {
     );
     _ensureSuccess(response);
   }
+
+  Map<String, String> _authHeaders(String token) => {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json; charset=UTF-8',
+    'Authorization': 'Token $token',
+  };
 
   void _ensureSuccess(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
