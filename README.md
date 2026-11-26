@@ -156,16 +156,13 @@ Untuk CI, variabel repositori `API_BASE_URL` (Settings > Secrets and variables >
   * Kartu menu dan opsi drawer untuk Education, serta refactor kecil (`NetworkImageBox` dan `ApiException.validationMessage`) supaya kode Experience dan Education tidak duplikat.
   * 22 test baru dengan `MockClient` dan pemecahan perubahan menjadi 7 commit dengan format *conventional commits*.
   * Draf README ini, termasuk jawaban pertanyaan reflektif Assignment 9.
-* **Strategi Prompting:** Saya mengunggah PDF soal Individual Assignment 9 dan meminta AI mengerjakannya di atas hasil Tutorial 10 yang sudah saya push. Soal saya jadikan acuan utama supaya AI mengikuti checklist dan rubrik, bukan menebak. Saya juga membagi tugas README: AI menulis README, sedangkan cuplikan prompting saya tulis sendiri.
+* **Strategi Prompting:** Saya mengunggah PDF soal Individual Assignment 9 dan meminta AI mengerjakannya di atas hasil Tutorial 10 yang sudah saya push. Soal saya jadikan acuan utama supaya AI mengikuti checklist dan rubrik, bukan menebak.
 * **Keterbatasan AI & Perbaikan Manual:**
-  * AI sempat salah membaca pembagian tugas README. Ia mengira saya hanya meminta cuplikan prompting, lalu menulis bagian itu saja. Setelah diluruskan, AI menulis README ini dan menyisakan bagian cuplikan prompting untuk saya.
+  * AI sempat salah membaca permintaan saya soal README dan awalnya hanya menulis cuplikan prompting. Setelah diluruskan, AI menulis README ini.
   * Form dari Assignment 8 saya adalah form Experience, dan form itu sudah dipakai sebagai pengganti "Project" di Tutorial 10. Karena itu AI membuat form Education baru, bukan me-refactor form lama. Soal sendiri meminta "setidaknya satu bagian portofolio selain Project".
   * AI menguji di Flutter versi Linux dan Chromium *headless* terhadap salinan database Django di *sandbox*, bukan di laptop saya. Saya menjalankan ulang semua langkah di Mac, mengetes alur daftar, tambah, 401 (menghapus token lewat Django Admin), dan hapus di Safari, lalu mengecek data barunya di web Django.
   * Token hanya disimpan di memori (`AuthState`), jadi setelah aplikasi ditutup saya harus login ulang. Ini disengaja mengikuti Tutorial 10, bukan bug.
   * Isian contoh di test (misalnya "SMA Negeri 1 Depok") hanya data uji, bukan riwayat pendidikan saya.
-  * [Tuliskan di sini perbaikan atau pengecekan manual lain yang kamu lakukan sendiri.]
-* **Cuplikan Prompting:**
-  * [Tuliskan di sini cuplikan prompting kamu sendiri.]
 
 ---
 
@@ -199,7 +196,6 @@ Untuk CI, variabel repositori `API_BASE_URL` (Settings > Secrets and variables >
 * **Keterbatasan AI & Perbaikan Manual:**
   * AI menguji di Flutter versi Linux dan build web di *sandbox*, bukan di laptop saya. Saya menjalankan ulang `flutter analyze` dan `flutter test`, lalu mengetes form di browser saya sendiri (termasuk layar selebar ponsel).
   * Isian contoh di test (misalnya "Staff IT Compfest") hanya data uji, bukan data experience saya yang sebenarnya.
-  * [Tuliskan di sini perbaikan atau pengecekan manual yang kamu lakukan sendiri.]
 
 ---
 
